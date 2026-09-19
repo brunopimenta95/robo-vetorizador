@@ -4,29 +4,36 @@ import vtracer
 import os
 import uuid
 
-app = FastAPI(title="Robô Vetorizador Gratuito")
+app = FastAPI(title="Robô Vetorizador Otimizado")
 
 @app.get("/")
 def home():
-    return {"status": "Online", "mensagem": "O motor do seu robô vetorizador está funcionando perfeitamente!"}
+    return {"status": "Online", "mensagem": "O motor de alta precisão está pronto!"}
 
 @app.post("/vetorizar")
 async def vetorizar_imagem(file: UploadFile = File(...)):
-    # Cria nomes de arquivos únicos para evitar conflitos no servidor gratuito
     unique_id = str(uuid.uuid4())
     input_path = f"input_{unique_id}.png"
     output_path = f"output_{unique_id}.svg"
     
     try:
-        # Lê e salva temporariamente a imagem enviada
         content = await file.read()
         with open(input_path, "wb") as f:
             f.write(content)
         
-        # Executa a vetorização em cores usando a sintaxe padrão e atualizada
-        vtracer.convert_image_to_svg_py(input_path, output_path)
+        # Calibragem avançada para letras nítidas e curvas perfeitas no CorelDRAW
+        vtracer.convert_image_to_svg_py(
+            input_path, 
+            output_path,
+            mode='spline',          # Usa curvas suaves (splines) em vez de linhas retas serrilhadas
+            colormode='color',      # Mantém o mapeamento de cores idêntico ao original
+            hierarchical='stacked', # Empilha as camadas de cores (evita frestas brancas no Corel)
+            corner_threshold=30,    # Menor valor = cantos mais vivos e letras mais nítidas (padrão era 60)
+            length_threshold=2.0,   # Detalha formas bem menores, ideal para textos pequenos (padrão era 4.0)
+            splice_threshold=25,    # Une melhor os caminhos das curvas cortadas
+            filter_speckle=2        # Ignora apenas ruídos minúsculos para não perder detalhes da logo
+        )
         
-        # Se o vetor foi gerado com sucesso, lê os dados e prepara para o download
         if os.path.exists(output_path):
             with open(output_path, "r", encoding="utf-8") as f:
                 svg_data = f.read()
@@ -34,16 +41,15 @@ async def vetorizar_imagem(file: UploadFile = File(...)):
             return Response(
                 content=svg_data,
                 media_type="image/svg+xml",
-                headers={"Content-Disposition": "attachment; filename=seu_vetor.svg"}
+                headers={"Content-Disposition": "attachment; filename=vetor_alta_precisao.svg"}
             )
         else:
-            return JSONResponse(status_code=500, content={"erro": "O motor não conseguiu gerar o arquivo vetorial."})
+            return JSONResponse(status_code=500, content={"erro": "Falha ao gerar vetor."})
             
     except Exception as e:
-        return JSONResponse(status_code=500, content={"erro": f"Erro interno no processamento: {str(e)}"})
+        return JSONResponse(status_code=500, content={"erro": str(e)})
         
     finally:
-        # Garante que os arquivos temporários sejam apagados para poupar espaço de graça
         if os.path.exists(input_path):
             os.remove(input_path)
         if os.path.exists(output_path):
