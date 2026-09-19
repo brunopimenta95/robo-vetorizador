@@ -21,17 +21,18 @@ async def vetorizar_imagem(file: UploadFile = File(...)):
         with open(input_path, "wb") as f:
             f.write(content)
         
-        # Calibragem avançada para letras nítidas e curvas perfeitas no CorelDRAW
+        # Sintaxe oficial e atualizada do VTracer para traçados limpos
         vtracer.convert_image_to_svg_py(
             input_path, 
             output_path,
-            mode='spline',          # Usa curvas suaves (splines) em vez de linhas retas serrilhadas
-            colormode='color',      # Mantém o mapeamento de cores idêntico ao original
-            hierarchical='stacked', # Empilha as camadas de cores (evita frestas brancas no Corel)
-            corner_threshold=30,    # Menor valor = cantos mais vivos e letras mais nítidas (padrão era 60)
-            length_threshold=2.0,   # Detalha formas bem menores, ideal para textos pequenos (padrão era 4.0)
-            splice_threshold=25,    # Une melhor os caminhos das curvas cortadas
-            filter_speckle=2        # Ignora apenas ruídos minúsculos para não perder detalhes da logo
+            colormode="color",        # Mantém todas as cores originais da logo
+            hierarchical="stacked",    # Empilha as camadas (perfeito para o CorelDRAW)
+            mode="spline",            # Suaviza os nós eliminando o efeito serrilhado
+            filter_speckle=4,         # Limpa pequenos pontos indesejados
+            color_precision=6,        # Melhora a fidelidade das tonalidades
+            layer_difference=16,
+            corner_threshold=60,      # Deixa cantos de fontes bem acabados
+            length_threshold=4.0
         )
         
         if os.path.exists(output_path):
@@ -44,12 +45,13 @@ async def vetorizar_imagem(file: UploadFile = File(...)):
                 headers={"Content-Disposition": "attachment; filename=vetor_alta_precisao.svg"}
             )
         else:
-            return JSONResponse(status_code=500, content={"erro": "Falha ao gerar vetor."})
+            return JSONResponse(status_code=500, content={"erro": "Falha ao gerar arquivo final."})
             
     except Exception as e:
         return JSONResponse(status_code=500, content={"erro": str(e)})
         
     finally:
+        # Garante a limpeza do servidor gratuito após cada execução
         if os.path.exists(input_path):
             os.remove(input_path)
         if os.path.exists(output_path):
